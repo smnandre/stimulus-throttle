@@ -1,0 +1,76 @@
+{
+  "name": "@smnandre/stimulus-throttle",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Throttle event handlers in Stimulus controllers with custom action modifiers and declarative configuration.",
+  "main": "dist/stimulus-throttle.umd.js",
+  "module": "dist/stimulus-throttle.es.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/stimulus-throttle.es.js",
+      "require": "./dist/stimulus-throttle.umd.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "clean": "rimraf dist",
+    "clean:coverage": "rimraf .nyc_output coverage", 
+    "prepare": "npm run build",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "test:e2e": "playwright test",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix"
+  },
+  "keywords": [
+    "stimulus",
+    "hotwired",
+    "throttle",
+    "debounce",
+    "rate-limit",
+    "event",
+    "modifiers",
+    "plugin",
+    "typescript",
+    "performance",
+    "symfony",
+    "ux"
+  ],
+  "author": "smnandre",
+  "license": "MIT", 
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smnandre/stimulus-throttle.git"
+  },
+  "bugs": {
+    "url": "https://github.com/smnandre/stimulus-throttle/issues"
+  },
+  "homepage": "https://github.com/smnandre/stimulus-throttle#readme",
+  "peerDependencies": {
+    "@hotwired/stimulus": "^3.0.0"
+  },
+  "dependencies": {
+    "tslib": "^2.5.0"
+  },
+  "devDependencies": {
+    "@hotwired/stimulus": "^3.2.1",
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^22.15.29",
+    "@typescript-eslint/eslint-plugin": "^8.33.0",
+    "@typescript-eslint/parser": "^8.33.0",
+    "@vitest/coverage-istanbul": "^3.1.4",
+    "eslint": "^9.28.0",
+    "eslint-plugin-import": "^2.31.0",
+    "happy-dom": "^17.5.6",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.0.0", 
+    "vite": "^6.3.5",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^3.1.4"
+  }
+}

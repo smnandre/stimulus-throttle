@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Throttle Mixin E2E Tests</title>
+  <script src="https://unpkg.com/@hotwired/stimulus"></script>
+  <style>
+    .container { padding: 20px; margin: 10px; border: 1px solid #ccc; }
+    .btn { padding: 8px 16px; margin: 4px; cursor: pointer; }
+    .primary { background: #007bff; color: white; }
+    .secondary { background: #6c757d; color: white; }
+    .log { background: #f8f9fa; padding: 10px; margin: 10px 0; font-family: monospace; }
+    .nested { padding: 10px; background: #e9ecef; margin: 5px; }
+    .card { border: 1px solid #dee2e6; padding: 15px; margin: 10px; }
+  </style>
+</head>
+<body>
+  <div data-controller="throttle-test">
+    
+    <div class="container">
+      <h3>Button Events</h3>
+      <button class="btn primary" data-action="save" id="save-btn">Save</button>
+      <button class="btn secondary" data-action="cancel" id="cancel-btn">Cancel</button>
+      <button class="btn" data-action="delete" id="delete-btn">Delete</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { useThrottle } from "https://cdn.jsdelivr.net/npm/@smnandre/stimulus-throttle@latest/dist/stimulus-throttle.es.js";
+    class ThrottleController extends window.Stimulus.Controller {
+      initialize() {
+        useThrottle(this)
+      }
+      connect() {
+        this.log('Controller connected')
+      }
+      disconnect() {
+        this.log('Controller disconnected')
+      }
+    }
+
+    window.application = window.Stimulus.Application.start()
+    window.application.register('throttle-test', ThrottleController)
+  </script>
+</body>
+</html>
