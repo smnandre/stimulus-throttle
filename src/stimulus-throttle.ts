@@ -8,7 +8,7 @@ type ThrottleConfig = {
 
 const throttleRegistry = new WeakMap<any, Map<string, any>>();
 
-function throttle(func: Function, delay: number, options: { leading?: boolean; trailing?: boolean } = {}) {
+export function throttle(func: Function, delay: number, options: { leading?: boolean; trailing?: boolean } = {}) {
   const { leading = true, trailing = true } = options;
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let lastCallTime = 0;
@@ -49,70 +49,65 @@ function throttle(func: Function, delay: number, options: { leading?: boolean; t
 }
 
 function wireThrottledListeners(controller: Controller, listeners: Record<string, any>) {
-  const originalConnect = controller.connect?.bind(controller);
-  const originalDisconnect = controller.disconnect?.bind(controller);
+  const throttledMethods = new Map<string, any>();
+  throttleRegistry.set(controller, throttledMethods);
 
-  controller.connect = function () {
-    originalConnect?.();
-    
-    const throttledMethods = new Map();
-    throttleRegistry.set(this, throttledMethods);
+  Object.entries(listeners).forEach(([eventName, config]) => {
+    let methodName: string;
+    let throttleConfig: ThrottleConfig;
+    let eventOptions: AddEventListenerOptions | undefined;
 
-    Object.entries(listeners).forEach(([eventName, config]) => {
-      let methodName: string;
-      let throttleConfig: ThrottleConfig;
-      let eventOptions: AddEventListenerOptions | undefined;
+    if (typeof config === 'string') {
+      throw new Error('Throttled listeners require a configuration object');
+    } else if (Array.isArray(config)) {
+      const [method, options] = config;
+      methodName = method;
+      throttleConfig = options.throttle;
+      eventOptions = { ...options };
+      delete (eventOptions as any).throttle;
+    } else {
+      methodName = config.method;
+      throttleConfig = config.throttle;
+      eventOptions = config.options;
+    }
 
-      if (typeof config === 'string') {
-        throw new Error('Throttled listeners require configuration object');
-      } else if (Array.isArray(config)) {
-        const [method, options] = config;
-        methodName = method;
-        throttleConfig = options.throttle;
-        eventOptions = { ...options };
-        delete (eventOptions as any).throttle;
-      } else {
-        methodName = config.method;
-        throttleConfig = config.throttle;
-        eventOptions = config.options;
-      }
+    if (!throttleConfig) {
+      throw new Error(`Throttle configuration required for ${eventName}`);
+    }
 
-      if (!throttleConfig) {
-        throw new Error(`Throttle configuration required for ${eventName}`);
-      }
+    const originalMethod = (controller as any)[methodName];
+    if (typeof originalMethod !== 'function') {
+      throw new Error(`Method ${methodName} not found on controller`);
+    }
 
-      const originalMethod = (this as any)[methodName];
-      if (typeof originalMethod !== 'function') {
-        throw new Error(`Method ${methodName} not found on controller`);
-      }
+    const throttledMethod = throttle(
+      originalMethod.bind(controller),
+      throttleConfig.delay,
+      {
+        leading: throttleConfig.leading,
+        trailing: throttleConfig.trailing,
+      },
+    );
 
-      const throttledMethod = throttle(
-        originalMethod.bind(this),
-        throttleConfig.delay,
-        {
-          leading: throttleConfig.leading,
-          trailing: throttleConfig.trailing
-        }
-      );
+    throttledMethods.set(eventName, throttledMethod);
+    controller.element.addEventListener(eventName, throttledMethod, eventOptions);
+  });
 
-      throttledMethods.set(methodName, throttledMethod);
-      this.element.addEventListener(eventName, throttledMethod, eventOptions);
-    });
-  };
-
+  const originalDisconnect = controller.disconnect.bind(controller);
   controller.disconnect = function () {
-    const throttledMethods = throttleRegistry.get(this);
-    if (throttledMethods) {
-      // Cleanup is handled by Stimulus controller lifecycle
+    const methods = throttleRegistry.get(this);
+    if (methods) {
+      methods.forEach((method, eventName) => {
+        this.element.removeEventListener(eventName, method);
+      });
       throttleRegistry.delete(this);
     }
-    originalDisconnect?.();
+    originalDisconnect.call(this);
   };
 }
 
 export function useThrottle(controller: Controller) {
-  const ctor = controller.constructor as any;
-  const throttledListeners = ctor.throttledListeners;
+  const throttledListeners = (controller.constructor as any).throttledListeners;
   if (throttledListeners) {
     wireThrottledListeners(controller, throttledListeners);
   }

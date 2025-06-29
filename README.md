@@ -1,95 +1,104 @@
 # Stimulus Throttle
 
-A TypeScript-compatible package for throttling event handlers in Stimulus controllers with support for custom action modifiers and declarative configuration.
+A Stimulus controller to throttle events.
 
-## Features
-
-- **Custom Action Modifiers**: Use `throttle:500ms` in your HTML action descriptors
-- **Declarative Configuration**: Define `static throttledListeners` in your controllers  
-- **Auto-Registration**: Automatically registers with Stimulus Application
-- **Performance Optimized**: Efficient throttling with leading/trailing options
-- **TypeScript Support**: Full type safety and IDE autocomplete
+This library provides a `throttle` function and a Stimulus controller that makes it easy to throttle events in your Stimulus applications. You can use it to limit the rate at which a function is called, for example, to prevent a function from being called too frequently on `scroll` or `resize` events.
 
 ## Installation
 
 ```bash
-npm install @smnandre/stimulus-throttle
+npm install stimulus-throttle
 ```
 
 ## Usage
 
-### Custom Action Modifiers (Automatic)
+There are two ways to use this library:
 
-Just import the package and use throttle modifiers in your HTML:
+### 1. Using `useThrottle` with `throttledListeners`
 
-```js
-import '@smnandre/stimulus-throttle';
-```
+You can use the `useThrottle` function to automatically wire up throttled event listeners on your Stimulus controller. To do this, add a static `throttledListeners` object to your controller, where the keys are the event names and the values are the configuration for the throttled listener.
 
-```html
-<!-- Throttle scroll events to 100ms -->
-<div data-controller="scroll" 
-     data-action="scroll->scroll#onScroll:throttle:100ms">
-</div>
-
-<!-- Throttle input events to 250ms -->
-<input data-controller="search"
-       data-action="input->search#onInput:throttle:250ms">
-```
-
-### Declarative Listeners
-
-```js
+```javascript
+// src/controllers/my-controller.js
 import { Controller } from '@hotwired/stimulus';
-import { useThrottle } from '@smnandre/stimulus-throttle';
+import { useThrottle } from 'stimulus-throttle';
 
 export default class extends Controller {
   static throttledListeners = {
-    'scroll': ['onScroll', { throttle: { delay: 100 } }],
-    'input': { 
-      method: 'onInput', 
-      throttle: { delay: 250, leading: false, trailing: true }
-    }
+    scroll: {
+      method: 'onScroll',
+      throttle: {
+        delay: 100,
+        leading: true,
+        trailing: false,
+      },
+      options: {
+        passive: true,
+      },
+    },
   };
 
-  initialize() {
+  connect() {
     useThrottle(this);
   }
 
   onScroll(event) {
-    // Throttled to 100ms
-  }
-
-  onInput(event) {
-    // Throttled to 250ms, trailing only
+    console.log('scrolling');
   }
 }
 ```
 
-### Imperative Setup
+### 2. Using the action modifier syntax
 
-```js
-import { useThrottledListeners } from '@smnandre/stimulus-throttle';
+This library also extends the Stimulus `Application` object to allow you to use a `:throttle` modifier in your action descriptors. To enable this, you need to call `registerThrottleModifiers` on your Stimulus application instance.
 
-export default class extends Controller {
-  connect() {
-    useThrottledListeners(this, {
-      'resize': ['onResize', { throttle: { delay: 100 } }]
-    });
-  }
-}
+```javascript
+// src/application.js
+import { Application } from '@hotwired/stimulus';
+import { extendApplicationWithThrottle } from 'stimulus-throttle';
+
+const application = Application.start();
+extendApplicationWithThrottle(application).registerThrottleModifiers();
+window.Stimulus = application;
 ```
 
-## Configuration Options
+Once you've done this, you can use the `:throttle` modifier in your HTML:
 
-```js
-{
-  delay: 250,        // Throttle delay in milliseconds
-  leading: true,     // Fire on leading edge (default: true)
-  trailing: true     // Fire on trailing edge (default: true)  
-}
+```html
+<div data-controller="my-controller" data-action="scroll->my-controller#onScroll:throttle:500ms">
+  ...
+</div>
 ```
+
+This will throttle the `onScroll` method to be called at most once every 500 milliseconds.
+
+## API
+
+### `useThrottle(controller)`
+
+Automatically wires up throttled event listeners on the given Stimulus controller based on the `throttledListeners` static property.
+
+### `useThrottledListeners(controller, listeners)`
+
+Wires up the given throttled event listeners on the given Stimulus controller.
+
+### `extendApplicationWithThrottle(application)`
+
+Extends the given Stimulus `Application` object with the ability to use the `:throttle` action modifier.
+
+### `throttle(func, delay, options)`
+
+Creates a throttled function that only invokes `func` at most once per every `delay` milliseconds.
+
+#### `options`
+
+- `leading` (boolean, default: `true`): Whether to invoke the function on the leading edge of the timeout.
+- `trailing` (boolean, default: `true`): Whether to invoke the function on the trailing edge of the timeout.
+
+## Contributing
+
+Bug reports and pull requests are welcome on GitHub at https://github.com/smnandre/stimulus-throttle.
 
 ## License
 
-MIT
+Released under the [MIT License](LICENSE) by [Simon André](https://github.com/smnandre).

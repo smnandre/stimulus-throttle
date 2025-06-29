@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stimulus Throttle E2E Test</title>
+    <script type="module">
+        import { Application, Controller } from "https://unpkg.com/@hotwired/stimulus/dist/stimulus.js";
+        
+        // Import the built library
+        const { extendApplicationWithThrottle, useThrottledListeners } = await import("../../dist/stimulus-throttle.es.js");
+
+        const application = Application.start();
+        extendApplicationWithThrottle(application).registerThrottleModifiers();
+
+        // Test controller for throttled button clicks
+        class ThrottleTestController extends Controller {
+            static targets = ["counter"];
+
+            connect() {
+                this.clickCount = 0;
+                this.updateCounter();
+                
+                // Use throttled listeners for button clicks
+                useThrottledListeners(this, {
+                    'click': {
+                        method: 'handleThrottledClick',
+                        throttle: { delay: 200 }
+                    }
+                });
+            }
+
+            handleThrottledClick() {
+                this.clickCount++;
+                this.updateCounter();
+            }
+
+            updateCounter() {
+                this.counterTarget.textContent = this.clickCount;
+            }
+        }
+
+        // Test controller for application-level throttle modifier
+        class ScrollTestController extends Controller {
+            static targets = ["scrollCounter"];
+
+            connect() {
+                this.scrollCount = 0;
+                this.updateCounter();
+            }
+
+            handleScroll() {
+                this.scrollCount++;
+                this.updateCounter();
+            }
+
+            updateCounter() {
+                this.scrollCounterTarget.textContent = this.scrollCount;
+            }
+        }
+
+        application.register("throttle-test", ThrottleTestController);
+        application.register("scroll-test", ScrollTestController);
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .scroll-div {
+            width: 200px;
+            height: 100px;
+            border: 1px solid #999;
+            overflow: auto;
+            padding: 10px;
+        }
+        
+        .scroll-content {
+            height: 300px;
+        }
+        
+        .counter {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Stimulus Throttle E2E Tests</h1>
+    
+    <div class="test-section">
+        <h2>Controller-level Throttling Test</h2>
+        <div data-controller="throttle-test">
+            <button 
+                data-testid="throttled-button" 
+                data-throttle-test-target="button"
+                data-action="click->throttle-test#handleThrottledClick"
+            >
+                Click me rapidly!
+            </button>
+            <div class="counter">
+                Clicks: <span data-testid="click-counter" data-throttle-test-target="counter">0</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Application-level Throttle Modifier Test</h2>
+        <div data-controller="scroll-test">
+            <div 
+                class="scroll-div" 
+                data-testid="scroll-div"
+                data-action="scroll->scroll-test#handleScroll:throttle:100ms"
+            >
+                <div class="scroll-content">
+                    Scroll this area to test throttling. The content is taller than the container.
+                </div>
+            </div>
+            <div class="counter">
+                Scrolls: <span data-testid="scroll-counter" data-scroll-test-target="scrollCounter">0</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
